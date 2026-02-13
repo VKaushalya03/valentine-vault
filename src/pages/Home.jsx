@@ -4,28 +4,17 @@ import { Link } from "react-router-dom";
 export default function Home() {
   return (
     <div className="bg-[#f8f6f6] dark:bg-[#211111] font-display text-slate-900 dark:text-slate-100 min-h-screen">
-      {/* Navigation */}
+      {/* Navigation - Cleaned up! */}
       <nav className="flex items-center justify-between px-6 py-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-[#ea2a33] rounded-xl flex items-center justify-center shadow-lg shadow-[#ea2a33]/20">
+        <div className="flex items-center gap-3">
+          {/* Add your actual logo image here. If you don't have one yet, it falls back to the red lock icon */}
+          <div className="w-10 h-10 bg-[#ea2a33] rounded-xl flex items-center justify-center shadow-lg shadow-[#ea2a33]/20 overflow-hidden">
+            {/* <img src="/your-logo.png" alt="Logo" className="w-full h-full object-cover" /> */}
             <span className="material-icons text-white">lock_heart</span>
           </div>
           <span className="text-xl font-bold tracking-tight">VAULT</span>
         </div>
-        <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-500 dark:text-slate-400">
-          <a className="hover:text-[#ea2a33] transition-colors" href="#">
-            How it works
-          </a>
-          <a className="hover:text-[#ea2a33] transition-colors" href="#">
-            Security
-          </a>
-          <a className="hover:text-[#ea2a33] transition-colors" href="#">
-            Gallery
-          </a>
-        </div>
-        <button className="bg-[#ea2a33]/10 text-[#ea2a33] px-4 py-2 rounded-lg font-bold text-sm hover:bg-[#ea2a33] hover:text-white transition-all">
-          Sign In
-        </button>
+        {/* All extra links and Sign In button removed for maximum conversion focus */}
       </nav>
 
       <main className="max-w-7xl mx-auto px-6 py-12 md:py-20 lg:py-24">
@@ -36,38 +25,36 @@ export default function Home() {
               <span className="material-icons text-sm">security</span>
               End-to-End Encrypted
             </div>
+
             <h1 className="text-5xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-slate-900 dark:text-white">
               Give a Memory, <span className="text-[#ea2a33]">Not Just</span> a
               Moment.
             </h1>
+
             <p className="text-xl text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
               Create a private, encrypted digital keepsake for your Valentine. A
               permanent vault for your most cherished photos, notes, and dates.
+              <span className="block mt-3 font-bold text-[#ea2a33] bg-pink-100 dark:bg-[#ea2a33]/20 p-2 rounded-lg text-center border border-pink-200">
+                🎁 100% Free for Valentine's Day!
+              </span>
             </p>
+
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              {/* NOTE: I changed this to a Link so it routes to your creation page */}
+              {/* Updated CTA for the Free Launch */}
               <Link
                 to="/create"
-                className="bg-[#ea2a33] text-white px-8 py-5 rounded-xl font-bold text-lg shadow-xl shadow-[#ea2a33]/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                className="bg-[#ea2a33] text-white px-8 py-5 rounded-xl font-bold text-lg shadow-xl shadow-[#ea2a33]/30 hover:scale-[1.02] hover:bg-[#d41f27] active:scale-[0.98] transition-all flex items-center justify-center gap-3 animate-pulse"
               >
-                Create & Pay $5
+                Create Your Free Vault
                 <span className="material-icons">arrow_forward</span>
               </Link>
-              <div className="flex items-center gap-3 px-2">
-                <div className="text-sm font-medium text-slate-500">
-                  <span className="text-slate-900 dark:text-white font-bold">
-                    12k+
-                  </span>{" "}
-                  Vaults created
-                </div>
-              </div>
             </div>
 
             {/* Theme Selection Sub-section */}
             <div className="pt-10 space-y-6">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">
-                  Choose Your Style
+                  Included Themes
                 </h3>
                 <div className="h-px bg-slate-200 dark:bg-slate-800 flex-grow"></div>
               </div>
