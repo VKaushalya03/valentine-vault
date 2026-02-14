@@ -14,6 +14,7 @@ export default function CreateVault() {
     message: editData?.message || "",
     password: "",
     theme: editData?.theme || "classic",
+    customUrl: editData?.customUrl || "", // 🆕 NEW STATE FOR CUSTOM LINK
   });
 
   const [images, setImages] = useState(editData?.memories || []);
@@ -50,6 +51,12 @@ export default function CreateVault() {
     e.preventDefault();
     setIsProcessing(true);
 
+    // 🆕 Format the URL nicely (e.g., "Sarah & James!" -> "sarah-james")
+    const formattedSlug = formData.customUrl
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)+/g, "");
+
     try {
       const vaultData = {
         partnerName: formData.partnerName,
@@ -59,7 +66,7 @@ export default function CreateVault() {
 
       const encryptedBundle = await encryptData(vaultData, formData.password);
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("vaults")
         .insert([
           {
@@ -68,16 +75,26 @@ export default function CreateVault() {
             salt: encryptedBundle.salt,
             recipient_name: formData.partnerName,
             theme_id: formData.theme,
+            custom_url: formattedSlug, // 🆕 SAVE THE CUSTOM URL
           },
         ])
         .select();
 
-      if (error) throw error;
-      navigate(`/v/${data[0].id}`);
+      // 🆕 Check if the URL is already taken!
+      if (error) {
+        if (error.code === "23505") {
+          alert("That custom link is already taken! Please try another one.");
+          setIsProcessing(false);
+          return;
+        }
+        throw error;
+      }
+
+      // Navigate to their new custom vanity URL!
+      navigate(`/v/${formattedSlug}`);
     } catch (error) {
       console.error("Error:", error);
       alert("Something went wrong saving your vault!");
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -118,10 +135,24 @@ export default function CreateVault() {
                   key={t}
                   type="button"
                   onClick={() => setFormData({ ...formData, theme: t })}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 capitalize font-bold text-[10px] uppercase tracking-widest ${formData.theme === t ? (t === "classic" ? "border-[#ea2a33] bg-pink-50 text-slate-700 shadow-md" : t === "midnight" ? "border-cyan-500 bg-cyan-50 text-slate-700 shadow-md" : "border-amber-600 bg-amber-50 text-slate-700 shadow-md") : "border-slate-100 hover:border-slate-300 text-slate-400"}`}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 capitalize font-bold text-[10px] uppercase tracking-widest ${
+                    formData.theme === t
+                      ? t === "classic"
+                        ? "border-[#ea2a33] bg-pink-50 text-slate-700 shadow-md"
+                        : t === "midnight"
+                          ? "border-cyan-500 bg-cyan-50 text-slate-700 shadow-md"
+                          : "border-amber-600 bg-amber-50 text-slate-700 shadow-md"
+                      : "border-slate-100 hover:border-slate-300 text-slate-400"
+                  }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full shadow-sm bg-gradient-to-br ${t === "classic" ? "from-[#ff758c] to-[#ff7eb3]" : t === "midnight" ? "from-[#0f172a] to-[#3b82f6]" : "from-[#d4c4a8] to-[#e8dcc4]"}`}
+                    className={`w-8 h-8 rounded-full shadow-sm bg-gradient-to-br ${
+                      t === "classic"
+                        ? "from-[#ff758c] to-[#ff7eb3]"
+                        : t === "midnight"
+                          ? "from-[#0f172a] to-[#3b82f6]"
+                          : "from-[#d4c4a8] to-[#e8dcc4]"
+                    }`}
                   ></div>
                   {t}
                 </button>
@@ -157,6 +188,28 @@ export default function CreateVault() {
                 onChange={handleChange}
                 className="w-full bg-pink-50/50 border border-pink-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 transition-all"
                 placeholder="A secret password"
+              />
+            </div>
+          </div>
+
+          {/* 🆕 NEW: CUSTOM LINK INPUT SECTION */}
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <span className="material-icons text-sm">link</span> Claim Your
+              Custom Link
+            </label>
+            <div className="flex bg-slate-50/80 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-[#ea2a33]/50 transition-all overflow-hidden">
+              <span className="bg-slate-200 text-slate-500 px-4 py-3 text-sm font-bold border-r border-slate-200 flex items-center">
+                vault.com/v/
+              </span>
+              <input
+                type="text"
+                name="customUrl"
+                required
+                value={formData.customUrl}
+                onChange={handleChange}
+                className="w-full bg-transparent px-4 py-3 focus:outline-none text-slate-800 font-bold"
+                placeholder="sarah-and-james"
               />
             </div>
           </div>

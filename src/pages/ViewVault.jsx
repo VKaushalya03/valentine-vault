@@ -10,6 +10,7 @@ import LockedScreen from "../components/LockedScreen";
 import AdminControls from "../components/AdminControls";
 import LetterBox from "../components/LetterBox";
 import MemoryCard from "../components/MemoryCard";
+import LoadingScreen from "../components/LoadingScreen";
 
 const THEME_CONFIG = {
   classic: {
@@ -66,7 +67,7 @@ export default function ViewVault() {
       const { data, error } = await supabase
         .from("vaults")
         .select("*")
-        .eq("id", id)
+        .eq("custom_url", id)
         .single();
       if (error || !data) setError("Vault not found.");
       else setVaultData(data);
@@ -98,12 +99,7 @@ export default function ViewVault() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Locating Vault...
-      </div>
-    );
+  if (loading) return <LoadingScreen />;
 
   if (!decryptedContent) {
     return (
