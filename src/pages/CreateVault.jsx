@@ -1,52 +1,51 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { encryptData } from "../lib/cryptoUtils";
+import Watermarks from "../components/Watermarks"; // 🌸 IMPORTING OUR WATERMARKS
 
 export default function CreateVault() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const editData = location.state;
+
   const [formData, setFormData] = useState({
-    partnerName: "",
-    message: "",
+    partnerName: editData?.partnerName || "",
+    message: editData?.message || "",
     password: "",
+    theme: editData?.theme || "classic",
   });
-  const [images, setImages] = useState([]);
+
+  const [images, setImages] = useState(editData?.memories || []);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Handle standard text inputs
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
 
-  // Convert Images to Base64 in the browser
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-
     files.forEach((file) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        // Add the image with an empty text field for the user to fill out
-        setImages((prev) => [...prev, { photoUrl: reader.result, text: "" }]);
-      };
+      reader.onloadend = () =>
+        setImages((prev) => [
+          ...prev,
+          { photoUrl: reader.result, text: "", date: "" },
+        ]);
       reader.readAsDataURL(file);
     });
   };
 
-  // Update the caption for a specific photo
-  const updateCaption = (index, newText) => {
+  const updateMemoryField = (index, field, value) => {
     setImages((prev) => {
       const updated = [...prev];
-      updated[index].text = newText;
+      updated[index][field] = value;
       return updated;
     });
   };
 
-  // Remove a photo if they made a mistake
-  const removeImage = (index) => {
+  const removeImage = (index) =>
     setImages((prev) => prev.filter((_, i) => i !== index));
-  };
 
-  // Handle Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsProcessing(true);
@@ -55,7 +54,7 @@ export default function CreateVault() {
       const vaultData = {
         partnerName: formData.partnerName,
         message: formData.message,
-        memories: images, // Now contains multiple photos with custom captions!
+        memories: images,
       };
 
       const encryptedBundle = await encryptData(vaultData, formData.password);
@@ -68,17 +67,15 @@ export default function CreateVault() {
             iv: encryptedBundle.iv,
             salt: encryptedBundle.salt,
             recipient_name: formData.partnerName,
-            theme_id: "classic",
+            theme_id: formData.theme,
           },
         ])
         .select();
 
       if (error) throw error;
-
-      const newVaultId = data[0].id;
-      navigate(`/v/${newVaultId}`);
+      navigate(`/v/${data[0].id}`);
     } catch (error) {
-      console.error("Error creating vault:", error);
+      console.error("Error:", error);
       alert("Something went wrong saving your vault!");
     } finally {
       setIsProcessing(false);
@@ -86,23 +83,53 @@ export default function CreateVault() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f6f6] flex flex-col items-center py-12 px-4 font-display">
-      <div className="max-w-2xl w-full bg-white rounded-[2rem] shadow-xl p-8 md:p-10 border border-slate-100">
+    <div
+      className="min-h-screen bg-[#fdfaf3] flex flex-col items-center py-12 px-4 font-display relative overflow-hidden"
+      style={{
+        backgroundImage: "radial-gradient(#ea2a3330 2px, transparent 2px)",
+        backgroundSize: "30px 30px",
+      }}
+    >
+      {/* 🌸 THE WATERMARKS IN THE BACKGROUND (Darker so you can see them!) 🌸 */}
+      <Watermarks opacity="opacity-[0.12]" />
+
+      {/* Added z-10, bg-white/95 and backdrop-blur to make it look premium over the watermarks */}
+      <div className="max-w-2xl w-full bg-white/95 backdrop-blur-sm rounded-[2rem] shadow-2xl p-8 md:p-10 border border-pink-100 relative z-10">
         <div className="text-center mb-8">
-          <div className="w-12 h-12 bg-[#ea2a33]/10 text-[#ea2a33] rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-12 h-12 bg-gradient-to-tr from-[#ea2a33] to-[#ff758c] text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#ea2a33]/30">
             <span className="material-icons">add_photo_alternate</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">
             Build Your Vault
           </h1>
-          <p className="text-slate-500 text-sm mt-2">
-            Everything is encrypted locally. We never see your photos.
+          <p className="text-slate-500 text-sm mt-2 font-medium">
+            Everything is encrypted locally. Only you hold the key.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="mb-6">
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
+              1. Choose A Theme
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {["classic", "midnight", "vintage"].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setFormData({ ...formData, theme: t })}
+                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 capitalize font-bold text-[10px] uppercase tracking-widest ${formData.theme === t ? (t === "classic" ? "border-[#ea2a33] bg-pink-50 text-slate-700 shadow-md" : t === "midnight" ? "border-cyan-500 bg-cyan-50 text-slate-700 shadow-md" : "border-amber-600 bg-amber-50 text-slate-700 shadow-md") : "border-slate-100 hover:border-slate-300 text-slate-400"}`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full shadow-sm bg-gradient-to-br ${t === "classic" ? "from-[#ff758c] to-[#ff7eb3]" : t === "midnight" ? "from-[#0f172a] to-[#3b82f6]" : "from-[#d4c4a8] to-[#e8dcc4]"}`}
+                  ></div>
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Partner Name */}
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
                 Partner's Name
@@ -113,12 +140,10 @@ export default function CreateVault() {
                 required
                 value={formData.partnerName}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50"
+                className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 transition-all"
                 placeholder="e.g., Sarah"
               />
             </div>
-
-            {/* Encryption Password */}
             <div>
               <label className="block text-xs font-bold text-[#ea2a33] uppercase tracking-wider mb-2 flex items-center gap-1">
                 <span className="material-icons text-sm">lock</span> Set Vault
@@ -130,13 +155,12 @@ export default function CreateVault() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50"
+                className="w-full bg-pink-50/50 border border-pink-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 transition-all"
                 placeholder="A secret password"
               />
             </div>
           </div>
 
-          {/* Main Message */}
           <div>
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
               Main Message
@@ -147,17 +171,16 @@ export default function CreateVault() {
               rows="3"
               value={formData.message}
               onChange={handleChange}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 resize-none"
+              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 resize-none transition-all"
               placeholder="Happy Valentine's Day! I love you..."
             />
           </div>
 
-          {/* Photo Upload Area */}
           <div className="pt-4 border-t border-slate-100">
             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-              Add Your Memories (Photos & Captions)
+              Add Your Memories
             </label>
-            <div className="w-full border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition-colors relative mb-4">
+            <div className="w-full border-2 border-dashed border-pink-200 rounded-xl p-6 text-center hover:bg-pink-50/50 transition-colors relative mb-4 group">
               <input
                 type="file"
                 multiple
@@ -165,44 +188,59 @@ export default function CreateVault() {
                 onChange={handleImageUpload}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               />
-              <span className="material-icons text-slate-400 text-3xl mb-2">
+              <span className="material-icons text-pink-300 text-3xl mb-2 group-hover:scale-110 transition-transform">
                 cloud_upload
               </span>
-              <p className="text-sm font-medium text-slate-600">
+              <p className="text-sm font-bold text-slate-600">
                 Click or drag photos here
               </p>
             </div>
 
-            {/* Memory Editor List */}
             {images.length > 0 && (
-              <div className="space-y-3 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-4 max-h-96 overflow-y-auto pr-2 custom-scrollbar">
                 {images.map((img, idx) => (
                   <div
                     key={idx}
-                    className="flex flex-col sm:flex-row gap-4 items-center bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-sm"
+                    className="flex flex-col sm:flex-row gap-4 items-start bg-white p-4 rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <img
-                      src={img.photoUrl}
-                      alt="preview"
-                      className="w-20 h-20 object-cover rounded-lg border border-slate-300 shadow-sm"
-                    />
+                    <div className="relative group/img">
+                      <img
+                        src={img.photoUrl}
+                        alt="preview"
+                        className="w-24 h-24 object-cover rounded-lg border border-slate-200 shadow-sm"
+                      />
+                    </div>
 
-                    <div className="flex-1 w-full">
+                    <div className="flex-1 w-full space-y-3">
                       <input
                         type="text"
                         required
                         value={img.text}
-                        onChange={(e) => updateCaption(idx, e.target.value)}
-                        placeholder="Write a short memory for this photo..."
-                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50"
+                        onChange={(e) =>
+                          updateMemoryField(idx, "text", e.target.value)
+                        }
+                        placeholder="Write a memory..."
+                        className="w-full bg-slate-50/80 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 transition-all"
                       />
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-slate-400 text-sm">
+                          calendar_month
+                        </span>
+                        <input
+                          type="date"
+                          value={img.date || ""}
+                          onChange={(e) =>
+                            updateMemoryField(idx, "date", e.target.value)
+                          }
+                          className="w-full bg-slate-50/80 border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#ea2a33]/50 transition-all"
+                        />
+                      </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => removeImage(idx)}
-                      className="text-slate-400 hover:text-[#ea2a33] p-2 bg-white rounded-lg border border-slate-200 shadow-sm transition-colors"
-                      title="Remove Photo"
+                      className="text-slate-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors mt-1 sm:mt-0"
                     >
                       <span className="material-icons text-sm">delete</span>
                     </button>
@@ -215,13 +253,11 @@ export default function CreateVault() {
           <button
             type="submit"
             disabled={isProcessing || images.length === 0}
-            className="w-full bg-[#ea2a33] text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-[#ea2a33]/30 hover:bg-[#d41f27] transition-all hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2 mt-6"
+            className="w-full bg-slate-900 text-white font-bold text-lg py-4 rounded-xl shadow-xl shadow-slate-900/20 hover:bg-[#ea2a33] hover:shadow-[#ea2a33]/40 transition-all duration-300 hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-slate-900 flex items-center justify-center gap-2 mt-6"
           >
             {isProcessing ? "Encrypting & Saving..." : "Lock & Encrypt Vault"}
             {!isProcessing && (
-              <span className="material-icons text-sm">
-                enhanced_encryption
-              </span>
+              <span className="material-icons text-sm">lock_outline</span>
             )}
           </button>
         </form>
